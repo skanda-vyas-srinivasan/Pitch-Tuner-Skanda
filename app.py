@@ -5,6 +5,27 @@ import soundfile as sf
 import tempfile
 import os
 KEY_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+linkedin_profile = "https://www.linkedin.com/in/skanda-vyas"
+linkedin_image = "https://upload.wikimedia.org/wikipedia/commons/c/ca/LinkedIn_logo_initials.png"
+
+st.markdown(
+    f"""
+    <style>
+    .floating-linkedin {{
+        position: fixed;
+        bottom: 20px; /* Adjust spacing from the bottom */
+        left: 20px;   /* Adjust spacing from the left */
+        z-index: 100; /* Ensures the widget is above other elements */
+    }}
+    </style>
+    <div class="floating-linkedin">
+        <a href="{linkedin_profile}" target="_blank">
+            <img src="{linkedin_image}" alt="LinkedIn Profile" width="50">
+        </a>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 def analyze_audio(file_path):
     """
