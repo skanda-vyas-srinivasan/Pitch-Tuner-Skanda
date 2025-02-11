@@ -29,12 +29,6 @@ st.markdown(
 )
 
 def analyze_audio(file_path):
-    """
-    Analyze the audio file to detect its key and tuning offset.
-    Returns:
-      detected_key (str): The estimated key from the audio.
-      tuning_offset (float): The estimated tuning offset in cents.
-    """
     y, sr = librosa.load(file_path, sr=None)
     chroma = librosa.feature.chroma_cens(y=y, sr=sr)
     key_index = np.argmax(np.mean(chroma, axis=1))
@@ -43,12 +37,6 @@ def analyze_audio(file_path):
     return detected_key, tuning_offset
 
 def fix_audio(file_path, desired_key):
-    """
-    Apply initial pitch shift to correct tuning offset and then apply key switch.
-    Returns:
-      y_fixed: The processed audio signal.
-      sr: The sampling rate.
-    """
     y, sr = librosa.load(file_path, sr=None)
     # Detect current key
     chroma = librosa.feature.chroma_cens(y=y, sr=sr)
@@ -64,7 +52,6 @@ def fix_audio(file_path, desired_key):
     y_fixed =pyrb.pitch_shift(y, sr,semitones_shift)
     return y_fixed, sr, semitones_shift
 
-# --- Streamlit App UI ---
 
 st.title("Skanda's Pitch Tuner")
 
