@@ -4,6 +4,7 @@ import numpy as np
 import soundfile as sf
 import tempfile
 import os
+import pyrubberband as pyrb
 KEY_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 linkedin_profile = "https://www.linkedin.com/in/skanda-vyas"
 linkedin_image = "https://upload.wikimedia.org/wikipedia/commons/c/ca/LinkedIn_logo_initials.png"
@@ -60,7 +61,7 @@ def fix_audio(file_path, desired_key):
     extra_shift = KEY_NAMES.index(desired_key.upper()) - KEY_NAMES.index(detected_key)
     semitones_shift += extra_shift
     # Apply pitch shift
-    y_fixed = librosa.effects.pitch_shift(y=y, sr=sr, n_steps=semitones_shift, res_type='kaiser_best')
+    y_fixed =pyrb.pitch_shift(y, sr,semitones_shift)
     return y_fixed, sr, semitones_shift
 
 # --- Streamlit App UI ---
