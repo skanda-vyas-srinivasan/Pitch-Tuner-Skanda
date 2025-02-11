@@ -1,11 +1,48 @@
 import streamlit as st
-import requests
-from io import BytesIO
+import librosa
+import numpy as np
+import soundfile as sf
+import tempfile
+import os
+KEY_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 
-backgroundColor = "#121212"
-# URL where the Flask API is running
-API_URL = "http://localhost:5000"
+def analyze_audio(file_path):
+    """
+    Analyze the audio file to detect its key and tuning offset.
+    Returns:
+      detected_key (str): The estimated key from the audio.
+      tuning_offset (float): The estimated tuning offset in cents.
+    """
+    y, sr = librosa.load(file_path, sr=None)
+    chroma = librosa.feature.chroma_cens(y=y, sr=sr)
+    key_index = np.argmax(np.mean(chroma, axis=1))
+    detected_key = KEY_NAMES[key_index]
+    tuning_offset = librosa.estimate_tuning(y=y, sr=sr) * 100
+    return detected_key, tuning_offset
 
+def fix_audio(file_path, desired_key):
+    """
+    Apply initial pitch shift to correct tuning offset and then apply key switch.
+    Returns:
+      y_fixed: The processed audio signal.
+      sr: The sampling rate.
+    """
+    y, sr = librosa.load(file_path, sr=None)
+    # Detect current key
+    chroma = librosa.feature.chroma_cens(y=y, sr=sr)
+    key_index = np.argmax(np.mean(chroma, axis=1))
+    detected_key = KEY_NAMES[key_index]
+    # Estimate tuning offset (in cents)
+    tuning_offset = librosa.estimate_tuning(y=y, sr=sr) * 100
+    # Calculate shift: convert tuning offset to semitones (divide by 100) and adjust for desired key
+    semitones_shift = - (tuning_offset / 100)
+    extra_shift = KEY_NAMES.index(desired_key.upper()) - KEY_NAMES.index(detected_key)
+    semitones_shift += extra_shift
+    # Apply pitch shift
+    y_fixed = librosa.effects.pitch_shift(y=y, sr=sr, n_steps=semitones_shift, res_type='kaiser_best')
+    return y_fixed, sr, semitones_shift
+
+# --- Streamlit App UI ---
 
 st.title("Skanda's Pitch Tuner")
 
@@ -16,65 +53,47 @@ This app allows you to:
 3. **Apply a key switch** by selecting a desired key to adjust the audio pitch.
 """)
 
-# Step 1: Upload the audio file
-uploaded_file = st.file_uploader("Upload an audio file", type=["wav", "mp3"])
+uploaded_file = st.file_uploader("Upload an audio file (wav or mp3)", type=["wav", "mp3"])
 
 if uploaded_file is not None:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tfile:
+        tfile.write(uploaded_file.read())
+        temp_file_path = tfile.name
+
     st.audio(uploaded_file, format="audio/wav")
     
-    # Analyze button: Send the audio file to the Flask API
     if st.button("Analyze Audio"):
-        # Prepare the file for the request (reset pointer and create a tuple)
-        uploaded_file.seek(0)
-        files = {
-            'file': (uploaded_file.name, uploaded_file, uploaded_file.type)
-        }
         with st.spinner("Analyzing audio..."):
-            response = requests.post(f"{API_URL}/analyze", files=files)
-        if response.status_code == 200:
-            data = response.json()
-            detected_key = data.get("key")
-            tuning_offset = data.get("tuning_offset")
-            st.success("Audio analyzed successfully!")
-            st.write(f"**Detected Key:** {detected_key}")
-            st.write(f"**Tuning Offset:** {tuning_offset} cents")
-            
-            # Store detected values in session state for later use.
-            st.session_state.detected_key = detected_key
-            st.session_state.tuning_offset = tuning_offset
-            st.session_state.audio_uploaded = True
-        else:
-            st.error("Error analyzing audio: " + response.text)
+            detected_key, tuning_offset = analyze_audio(temp_file_path)
+        st.success("Audio analyzed successfully!")
+        st.write(f"**Detected Key:** {detected_key}")
+        st.write(f"**Tuning Offset:** {tuning_offset:.2f} cents")
 
-# Step 2: If audio has been analyzed, let the user choose a desired key
-if st.session_state.get("audio_uploaded", False):
+        st.session_state.detected_key = detected_key
+        st.session_state.audio_path = temp_file_path
+
+if st.session_state.get("audio_path"):
     st.markdown("---")
     st.subheader("Apply Key Switch")
-    desired_key = st.selectbox(
-        "Select desired key",
-        ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
-    )
+    default_key = st.session_state.detected_key if "detected_key" in st.session_state else "C"
+    desired_key = st.selectbox("Select desired key", KEY_NAMES, index=KEY_NAMES.index(default_key))
     
-    if st.button("Apply Key Switch"):
-        # Post desired_key as form data to the Flask endpoint
-        data = {'desired_key': desired_key}
-        with st.spinner("Processing audio..."):
-            response = requests.post(f"{API_URL}/key_switch", data=data)
-        if response.status_code == 200:
-            st.success("Key switch applied successfully!")
-            # Get the processed audio file as bytes
-            processed_audio = BytesIO(response.content)
-            
-            # Provide an audio player for the result
-            st.audio(processed_audio, format="audio/wav")
-            
-            # Reset the pointer for download button
-            processed_audio.seek(0)
+    if st.button("Fix Audio"):
+        cents = 0
+        with st.spinner("Fixing audio..."):
+            y_fixed, sr, cents =  fix_audio(st.session_state.audio_path, desired_key)
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as fixed_file:
+                sf.write(fixed_file.name, y_fixed, sr)
+                fixed_file_path = fixed_file.name
+        st.success("Audio fixed!")
+        
+        st.write(f"Tuned file by {cents*100} cents")
+        st.audio(fixed_file_path, format="audio/wav")
+        
+        with open(fixed_file_path, "rb") as f:
             st.download_button(
-                label="Download Processed Audio",
-                data=processed_audio,
+                label="Download Fixed Audio",
+                data=f,
                 file_name="fixed.wav",
                 mime="audio/wav"
             )
-        else:
-            st.error("Error applying key switch: " + response.text)
