@@ -28,6 +28,29 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# Donation button
+donation_link = "https://buymeacoffee.com/golgiwaffles"
+donation_image = "https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
+
+st.markdown(
+    f"""
+    <style>
+    .floating-donation {{
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 100;
+    }}
+    </style>
+    <div class="floating-donation">
+        <a href="{donation_link}" target="_blank">
+            <img src="{donation_image}" alt="Support this project" width="50">
+        </a>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
 def analyze_audio(file_path):
     y, sr = librosa.load(file_path, sr=None)
     chroma = librosa.feature.chroma_cens(y=y, sr=sr)
