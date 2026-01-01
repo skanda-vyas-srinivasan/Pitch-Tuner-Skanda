@@ -85,6 +85,11 @@ This app allows you to:
 3. **Apply a key switch** by selecting a desired key to adjust the audio pitch.
 """)
 
+# Sidebar for feedback
+with st.sidebar:
+    st.markdown("### 💬 Feedback")
+    st.markdown("[Share your thoughts & suggestions](https://forms.gle/nWfGButqLA1w48zC8)")
+
 uploaded_file = st.file_uploader("Upload an audio file (wav or mp3)", type=["wav", "mp3"])
 
 if uploaded_file is not None:
