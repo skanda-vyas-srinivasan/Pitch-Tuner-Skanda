@@ -51,6 +51,39 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# Feedback button
+feedback_link = "https://forms.gle/nWfGButqLA1w48zC8"
+
+st.markdown(
+    f"""
+    <style>
+    .floating-feedback {{
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 100;
+        background-color: #4CAF50;
+        color: white;
+        padding: 10px 15px;
+        border-radius: 20px;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }}
+    .floating-feedback:hover {{
+        background-color: #45a049;
+    }}
+    </style>
+    <div class="floating-feedback">
+        <a href="{feedback_link}" target="_blank" style="color: white; text-decoration: none;">
+            💬 Feedback
+        </a>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
 def analyze_audio(file_path):
     y, sr = librosa.load(file_path, sr=None)
     chroma = librosa.feature.chroma_cens(y=y, sr=sr)
@@ -84,11 +117,6 @@ This app allows you to:
 2. **Analyze the audio** to detect its key and tuning offset.
 3. **Apply a key switch** by selecting a desired key to adjust the audio pitch.
 """)
-
-# Sidebar for feedback
-with st.sidebar:
-    st.markdown("### 💬 Feedback")
-    st.markdown("[Share your thoughts & suggestions](https://forms.gle/nWfGButqLA1w48zC8)")
 
 uploaded_file = st.file_uploader("Upload an audio file (wav or mp3)", type=["wav", "mp3"])
 
