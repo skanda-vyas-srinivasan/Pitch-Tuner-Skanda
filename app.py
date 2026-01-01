@@ -59,7 +59,7 @@ st.markdown(
     <style>
     .floating-feedback {{
         position: fixed;
-        bottom: 250px;
+        bottom: 140px;
         right: 20px;
         z-index: 9999;
         background-color: #ffffff;
