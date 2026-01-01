@@ -37,14 +37,14 @@ st.markdown(
     <style>
     .floating-donation {{
         position: fixed;
-        bottom: 20px;
+        bottom: 80px;
         right: 20px;
         z-index: 100;
     }}
     </style>
     <div class="floating-donation">
         <a href="{donation_link}" target="_blank">
-            <img src="{donation_image}" alt="Support this project" width="50">
+            <img src="{donation_image}" alt="Support this project" width="150">
         </a>
     </div>
     """,
