@@ -62,22 +62,23 @@ st.markdown(
         top: 20px;
         right: 20px;
         z-index: 100;
-        background-color: #4CAF50;
-        color: white;
-        padding: 10px 15px;
-        border-radius: 20px;
+        background-color: #ffffff;
+        color: #333;
+        padding: 8px 12px;
+        border-radius: 5px;
         text-decoration: none;
-        font-size: 14px;
-        font-weight: 500;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        font-size: 13px;
+        font-weight: 400;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        border: 1px solid #ddd;
     }}
     .floating-feedback:hover {{
-        background-color: #45a049;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.25);
     }}
     </style>
     <div class="floating-feedback">
-        <a href="{feedback_link}" target="_blank" style="color: white; text-decoration: none;">
-            💬 Feedback
+        <a href="{feedback_link}" target="_blank" style="color: #333; text-decoration: none;">
+            Feedback?
         </a>
     </div>
     """,
