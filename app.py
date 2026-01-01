@@ -59,9 +59,9 @@ st.markdown(
     <style>
     .floating-feedback {{
         position: fixed;
-        top: 20px;
+        bottom: 250px;
         right: 20px;
-        z-index: 100;
+        z-index: 9999;
         background-color: #ffffff;
         color: #333;
         padding: 8px 12px;
