@@ -32,7 +32,7 @@ def inject_styles():
             --studio-bg: #121212;
             --studio-panel: #222222;
             --studio-panel-2: #222222;
-            --studio-border: #343434;
+            --studio-border: rgba(177, 108, 211, 0.18);
             --studio-text: #b16cd3;
             --studio-muted: #c7a3d8;
             --studio-accent: #b16cd3;
@@ -57,8 +57,8 @@ def inject_styles():
 
         .block-container {{
             max-width: 1180px;
-            padding-top: 1.5rem;
-            padding-bottom: 4rem;
+            padding-top: 1.25rem;
+            padding-bottom: 2.5rem;
             background: transparent;
         }}
 
@@ -67,11 +67,10 @@ def inject_styles():
         }}
 
         .hero {{
-            background: var(--studio-panel);
-            border: 1px solid var(--studio-border);
-            border-radius: 12px;
+            background: transparent;
+            border: 0;
             margin-bottom: 1rem;
-            padding: 1rem 1.25rem 1.2rem;
+            padding: 0.25rem 0 0.7rem;
         }}
 
         .hero h1 {{
@@ -91,7 +90,7 @@ def inject_styles():
 
         .metric {{
             align-items: center;
-            background: var(--studio-panel);
+            background: rgba(255, 255, 255, 0.035);
             border: 1px solid var(--studio-border);
             border-radius: 10px;
             display: flex;
@@ -144,7 +143,7 @@ def inject_styles():
 
         .shift-readout {{
             align-items: center;
-            background: var(--studio-panel);
+            background: rgba(255, 255, 255, 0.035);
             border: 1px solid var(--studio-border);
             border-radius: 10px;
             display: flex;
@@ -169,8 +168,13 @@ def inject_styles():
 
         [data-testid="stFileUploaderDropzone"] {{
             background: #191919;
-            border: 1px dashed #464646;
+            border: 1px dashed rgba(177, 108, 211, 0.22);
             border-radius: 14px;
+        }}
+
+        div[data-testid="stVerticalBlockBorderWrapper"] {{
+            border-color: var(--studio-border) !important;
+            box-shadow: none !important;
         }}
 
         .stButton > button, .stDownloadButton > button {{
@@ -216,7 +220,7 @@ def inject_styles():
             display: grid;
             gap: 2.25rem;
             grid-template-columns: 1.05fr 1fr 1.1fr;
-            margin: -3.25rem 0 1.15rem;
+            margin: -3.25rem 0 0.5rem;
         }}
 
         .download-cue-cell {{
@@ -278,7 +282,8 @@ def inject_styles():
         }}
 
         .download-anchor {{
-            scroll-margin-top: 1.25rem;
+            scroll-margin-top: 0.75rem;
+            height: 0;
         }}
 
         .floating-linkedin {{
@@ -580,7 +585,6 @@ if st.session_state.get("fixed_file_path"):
         """,
         unsafe_allow_html=True,
     )
-    st.divider()
     st.markdown('<div id="download-export" class="download-anchor"></div>', unsafe_allow_html=True)
     with st.container(border=True):
         st.markdown(
