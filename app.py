@@ -214,21 +214,19 @@ def inject_styles():
 
         .download-jump {{
             align-items: center;
-            background: linear-gradient(135deg, var(--studio-accent), var(--studio-accent-2));
-            border-radius: 999px;
-            bottom: 18px;
-            color: #ffffff;
+            color: var(--studio-muted);
             display: flex;
-            font-size: 1.35rem;
-            font-weight: 800;
-            height: 3rem;
-            justify-content: center;
-            left: 50%;
-            position: fixed;
+            font-size: 0.9rem;
+            gap: 0.35rem;
+            justify-content: flex-end;
+            margin: 0.1rem 0 0.75rem;
             text-decoration: none;
-            transform: translateX(-50%);
-            width: 3rem;
-            z-index: 60;
+        }}
+
+        .download-jump span {{
+            color: var(--studio-accent);
+            font-size: 1rem;
+            line-height: 1;
         }}
 
         .download-anchor {{
@@ -519,7 +517,10 @@ with right_col:
                         st.error(f"Could not tune this file: {exc}")
 
 if st.session_state.get("fixed_file_path"):
-    st.markdown('<a class="download-jump" href="#download-export">↓</a>', unsafe_allow_html=True)
+    st.markdown(
+        '<a class="download-jump" href="#download-export">Download below <span>↓</span></a>',
+        unsafe_allow_html=True,
+    )
     st.divider()
     st.markdown('<div id="download-export" class="download-anchor"></div>', unsafe_allow_html=True)
     with st.container(border=True):
