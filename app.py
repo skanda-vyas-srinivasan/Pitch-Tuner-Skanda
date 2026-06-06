@@ -1,165 +1,473 @@
-import streamlit as st
+from pathlib import Path
+import tempfile
+
 import librosa
 import numpy as np
-import soundfile as sf
-import tempfile
-import os
 import pyrubberband as pyrb
+import soundfile as sf
+import streamlit as st
+
+
 KEY_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
-linkedin_profile = "https://www.linkedin.com/in/skanda-vyas"
-linkedin_image = "https://upload.wikimedia.org/wikipedia/commons/c/ca/LinkedIn_logo_initials.png"
 
-st.markdown(
-    f"""
-    <style>
-    .floating-linkedin {{
-        position: fixed;
-        bottom: 20px; /* Adjust spacing from the bottom */
-        left: 20px;   /* Adjust spacing from the left */
-        z-index: 100; /* Ensures the widget is above other elements */
-    }}
-    </style>
-    <div class="floating-linkedin">
-        <a href="{linkedin_profile}" target="_blank">
-            <img src="{linkedin_image}" alt="LinkedIn Profile" width="50">
-        </a>
-    </div>
-    """,
-    unsafe_allow_html=True,
+LINKEDIN_PROFILE = "https://www.linkedin.com/in/skanda-vyas"
+LINKEDIN_IMAGE = "https://upload.wikimedia.org/wikipedia/commons/c/ca/LinkedIn_logo_initials.png"
+DONATION_LINK = "https://buymeacoffee.com/golgiwaffles"
+DONATION_IMAGE = "https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
+FEEDBACK_LINK = "https://forms.gle/nWfGButqLA1w48zC8"
+
+
+st.set_page_config(
+    page_title="Skanda's Pitch Tuner",
+    page_icon="music",
+    layout="wide",
 )
 
-# Donation button
-donation_link = "https://buymeacoffee.com/golgiwaffles"
-donation_image = "https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
 
-st.markdown(
-    f"""
-    <style>
-    .floating-donation {{
-        position: fixed;
-        bottom: 80px;
-        right: 20px;
-        z-index: 100;
-    }}
-    </style>
-    <div class="floating-donation">
-        <a href="{donation_link}" target="_blank">
-            <img src="{donation_image}" alt="Support this project" width="150">
+def inject_styles():
+    st.markdown(
+        f"""
+        <style>
+        :root {{
+            --studio-bg: #0d0f14;
+            --studio-panel: #171b23;
+            --studio-panel-2: #202633;
+            --studio-border: #343d4f;
+            --studio-text: #f3f5f8;
+            --studio-muted: #aab2c1;
+            --studio-accent: #43d9ad;
+            --studio-warn: #f2b15f;
+        }}
+
+        .stApp {{
+            background:
+                radial-gradient(circle at 12% 12%, rgba(67, 217, 173, 0.10), transparent 24rem),
+                linear-gradient(135deg, #0d0f14 0%, #151923 50%, #10131a 100%);
+        }}
+
+        .block-container {{
+            max-width: 1180px;
+            padding-top: 2rem;
+            padding-bottom: 4rem;
+        }}
+
+        h1, h2, h3, p, label, span, div {{
+            letter-spacing: 0;
+        }}
+
+        .hero {{
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            margin-bottom: 1.35rem;
+            padding-bottom: 1.1rem;
+        }}
+
+        .hero h1 {{
+            color: var(--studio-text);
+            font-size: clamp(2.25rem, 5vw, 4.25rem);
+            line-height: 0.95;
+            margin: 0 0 0.55rem;
+            text-wrap: balance;
+        }}
+
+        .hero p {{
+            color: var(--studio-muted);
+            font-size: 1.05rem;
+            max-width: 68ch;
+            margin: 0;
+        }}
+
+        .metric-row {{
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.75rem;
+            margin: 0.35rem 0 1rem;
+        }}
+
+        .metric {{
+            background: rgba(255, 255, 255, 0.045);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            border-radius: 10px;
+            padding: 0.9rem 1rem;
+        }}
+
+        .metric .label {{
+            color: var(--studio-muted);
+            display: block;
+            font-size: 0.82rem;
+            margin-bottom: 0.25rem;
+        }}
+
+        .metric .value {{
+            color: var(--studio-text);
+            display: block;
+            font-size: 1.35rem;
+            font-weight: 750;
+            line-height: 1.1;
+        }}
+
+        .metric .value.accent {{
+            color: var(--studio-accent);
+        }}
+
+        .section-title {{
+            color: var(--studio-text);
+            font-size: 1rem;
+            font-weight: 720;
+            margin: 0 0 0.45rem;
+        }}
+
+        .section-copy {{
+            color: var(--studio-muted);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin: 0 0 1rem;
+        }}
+
+        .hint {{
+            color: var(--studio-muted);
+            font-size: 0.86rem;
+            margin-top: 0.55rem;
+        }}
+
+        .shift-readout {{
+            align-items: center;
+            background: linear-gradient(135deg, rgba(67, 217, 173, 0.12), rgba(242, 177, 95, 0.08));
+            border: 1px solid rgba(67, 217, 173, 0.30);
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            margin: 0.5rem 0 1rem;
+            padding: 0.85rem 1rem;
+        }}
+
+        .shift-readout span {{
+            color: var(--studio-muted);
+            font-size: 0.88rem;
+        }}
+
+        .shift-readout strong {{
+            color: var(--studio-text);
+            font-size: 1.35rem;
+        }}
+
+        div[data-testid="stVerticalBlockBorderWrapper"] {{
+            background: rgba(23, 27, 35, 0.86);
+            border-color: rgba(255, 255, 255, 0.10);
+        }}
+
+        .stButton > button, .stDownloadButton > button {{
+            border-radius: 8px;
+            font-weight: 720;
+            min-height: 2.85rem;
+        }}
+
+        .stButton > button[kind="primary"], .stDownloadButton > button[kind="primary"] {{
+            background: var(--studio-accent);
+            border-color: var(--studio-accent);
+            color: #07130f;
+        }}
+
+        .floating-linkedin {{
+            bottom: 18px;
+            left: 18px;
+            position: fixed;
+            z-index: 50;
+        }}
+
+        .floating-linkedin img {{
+            border-radius: 8px;
+            width: 42px;
+        }}
+
+        .floating-donation {{
+            bottom: 72px;
+            position: fixed;
+            right: 18px;
+            z-index: 50;
+        }}
+
+        .floating-donation img {{
+            width: 132px;
+        }}
+
+        .floating-feedback {{
+            background-color: #f3f5f8;
+            border-radius: 8px;
+            bottom: 126px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.18);
+            color: #141821;
+            font-size: 13px;
+            font-weight: 700;
+            padding: 8px 12px;
+            position: fixed;
+            right: 18px;
+            text-decoration: none;
+            z-index: 50;
+        }}
+
+        @media (max-width: 760px) {{
+            .metric-row {{
+                grid-template-columns: 1fr;
+            }}
+
+            .floating-donation, .floating-feedback, .floating-linkedin {{
+                display: none;
+            }}
+        }}
+        </style>
+
+        <a class="floating-linkedin" href="{LINKEDIN_PROFILE}" target="_blank">
+            <img src="{LINKEDIN_IMAGE}" alt="LinkedIn Profile">
         </a>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-# Feedback button
-feedback_link = "https://forms.gle/nWfGButqLA1w48zC8"
-
-st.markdown(
-    f"""
-    <style>
-    .floating-feedback {{
-        position: fixed;
-        bottom: 140px;
-        right: 20px;
-        z-index: 9999;
-        background-color: #ffffff;
-        color: #333;
-        padding: 8px 12px;
-        border-radius: 5px;
-        text-decoration: none;
-        font-size: 13px;
-        font-weight: 400;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        border: 1px solid #ddd;
-    }}
-    .floating-feedback:hover {{
-        box-shadow: 0 2px 12px rgba(0,0,0,0.25);
-    }}
-    </style>
-    <div class="floating-feedback">
-        <a href="{feedback_link}" target="_blank" style="color: #333; text-decoration: none;">
-            Feedback?
+        <a class="floating-donation" href="{DONATION_LINK}" target="_blank">
+            <img src="{DONATION_IMAGE}" alt="Support this project">
         </a>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+        <a class="floating-feedback" href="{FEEDBACK_LINK}" target="_blank">Feedback?</a>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def save_uploaded_file(uploaded_file):
+    suffix = Path(uploaded_file.name).suffix or ".wav"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
+        temp_file.write(uploaded_file.getvalue())
+        return temp_file.name
+
 
 def analyze_audio(file_path):
-    y, sr = librosa.load(file_path, sr=None)
+    y, sr = librosa.load(file_path, sr=None, mono=True)
     chroma = librosa.feature.chroma_cens(y=y, sr=sr)
-    key_index = np.argmax(np.mean(chroma, axis=1))
+    key_scores = np.mean(chroma, axis=1)
+    key_index = int(np.argmax(key_scores))
     detected_key = KEY_NAMES[key_index]
-    tuning_offset = librosa.estimate_tuning(y=y, sr=sr) * 100
-    return detected_key, tuning_offset
-
-def fix_audio(file_path, desired_key):
-    y, sr = librosa.load(file_path, sr=None)
-    # Detect current key
-    chroma = librosa.feature.chroma_cens(y=y, sr=sr)
-    key_index = np.argmax(np.mean(chroma, axis=1))
-    detected_key = KEY_NAMES[key_index]
-    # Estimate tuning offset (in cents)
-    tuning_offset = librosa.estimate_tuning(y=y, sr=sr) * 100
-    # Calculate shift: convert tuning offset to semitones (divide by 100) and adjust for desired key
-    semitones_shift = - (tuning_offset / 100)
-    extra_shift = KEY_NAMES.index(desired_key.upper()) - KEY_NAMES.index(detected_key)
-    semitones_shift += extra_shift
-    # Apply pitch shift
-    y_fixed =pyrb.pitch_shift(y, sr,semitones_shift)
-    return y_fixed, sr, semitones_shift
+    tuning_offset = float(librosa.estimate_tuning(y=y, sr=sr) * 100)
+    duration = float(librosa.get_duration(y=y, sr=sr))
+    confidence = float(key_scores[key_index] / np.maximum(np.sum(key_scores), 1e-9))
+    return {
+        "detected_key": detected_key,
+        "tuning_offset": tuning_offset,
+        "duration": duration,
+        "sample_rate": sr,
+        "confidence": confidence,
+    }
 
 
-st.title("Skanda's Pitch Tuner")
+def shortest_key_shift(from_key, to_key):
+    raw_shift = KEY_NAMES.index(to_key) - KEY_NAMES.index(from_key)
+    return ((raw_shift + 6) % 12) - 6
 
-st.markdown("""
-This app allows you to:
-1. **Upload an audio file.**
-2. **Analyze the audio** to detect its key and tuning offset.
-3. **Apply a key switch** by selecting a desired key to adjust the audio pitch.
-""")
 
-uploaded_file = st.file_uploader("Upload an audio file (wav or mp3)", type=["wav", "mp3"])
+def format_duration(seconds):
+    minutes = int(seconds // 60)
+    remainder = int(round(seconds % 60))
+    return f"{minutes}:{remainder:02d}"
 
-if uploaded_file is not None:
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tfile:
-        tfile.write(uploaded_file.read())
-        temp_file_path = tfile.name
 
-    st.audio(uploaded_file, format="audio/wav")
-    
-    if st.button("Analyze Audio"):
-        with st.spinner("Analyzing audio..."):
-            detected_key, tuning_offset = analyze_audio(temp_file_path)
-        st.success("Audio analyzed successfully!")
-        st.write(f"**Detected Key:** {detected_key}")
-        st.write(f"**Tuning Offset:** {tuning_offset:.2f} cents")
+def signed_number(value, decimals=2):
+    return f"{value:+.{decimals}f}"
 
-        st.session_state.detected_key = detected_key
-        st.session_state.audio_path = temp_file_path
 
-if st.session_state.get("audio_path"):
-    st.markdown("---")
-    st.subheader("Apply Key Switch")
-    default_key = st.session_state.detected_key if "detected_key" in st.session_state else "C"
-    desired_key = st.selectbox("Select desired key", KEY_NAMES, index=KEY_NAMES.index(default_key))
-    
-    if st.button("Fix Audio"):
-        cents = 0
-        with st.spinner("Fixing audio..."):
-            y_fixed, sr, cents =  fix_audio(st.session_state.audio_path, desired_key)
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as fixed_file:
-                sf.write(fixed_file.name, y_fixed, sr)
-                fixed_file_path = fixed_file.name
-        st.success("Audio fixed!")
-        
-        st.write(f"Tuned file by {cents*100} cents")
-        st.audio(fixed_file_path, format="audio/wav")
-        
-        with open(fixed_file_path, "rb") as f:
-            st.download_button(
-                label="Download Fixed Audio",
-                data=f,
-                file_name="fixed.wav",
-                mime="audio/wav"
+def shift_audio(file_path, semitone_shift):
+    y, sr = librosa.load(file_path, sr=None, mono=True)
+    if abs(semitone_shift) < 0.001:
+        y_shifted = y
+    else:
+        y_shifted = pyrb.pitch_shift(y, sr, semitone_shift)
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as fixed_file:
+        sf.write(fixed_file.name, y_shifted, sr)
+        return fixed_file.name
+
+
+def show_metric(label, value, accent=False):
+    accent_class = " accent" if accent else ""
+    st.markdown(
+        f"""
+        <div class="metric">
+            <span class="label">{label}</span>
+            <span class="value{accent_class}">{value}</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def reset_processed_output():
+    st.session_state.pop("fixed_file_path", None)
+    st.session_state.pop("last_shift", None)
+
+
+inject_styles()
+
+st.markdown(
+    """
+    <div class="hero">
+        <h1>Skanda's Pitch Tuner</h1>
+        <p>Upload a track, detect its key, tune it once from the original file, then compare the before and after audio.</p>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+uploaded_file = st.file_uploader("Upload WAV or MP3", type=["wav", "mp3"])
+
+if uploaded_file:
+    file_signature = (uploaded_file.name, uploaded_file.size)
+    if st.session_state.get("file_signature") != file_signature:
+        st.session_state.file_signature = file_signature
+        st.session_state.uploaded_file_name = uploaded_file.name
+        st.session_state.uploaded_audio = uploaded_file.getvalue()
+        st.session_state.audio_path = save_uploaded_file(uploaded_file)
+        st.session_state.pop("analysis", None)
+        reset_processed_output()
+
+if not st.session_state.get("audio_path"):
+    st.info("Upload a WAV or MP3 to begin.")
+    st.stop()
+
+left_col, middle_col, right_col = st.columns([1.05, 1, 1.1], gap="large")
+
+with left_col:
+    with st.container(border=True):
+        st.markdown('<p class="section-title">Original Track</p>', unsafe_allow_html=True)
+        st.write(st.session_state.uploaded_file_name)
+        st.audio(st.session_state.uploaded_audio)
+
+        if st.button("Analyze pitch", type="primary", use_container_width=True):
+            with st.spinner("Listening for key and tuning offset..."):
+                try:
+                    st.session_state.analysis = analyze_audio(st.session_state.audio_path)
+                    reset_processed_output()
+                except Exception as exc:
+                    st.error(f"Could not analyze this file: {exc}")
+
+        st.markdown(
+            '<p class="hint">Analysis runs on the original upload. Rendering also starts from the original, so each export avoids stacked pitch shifts.</p>',
+            unsafe_allow_html=True,
+        )
+
+analysis = st.session_state.get("analysis")
+
+with middle_col:
+    with st.container(border=True):
+        st.markdown('<p class="section-title">Pitch Analysis</p>', unsafe_allow_html=True)
+
+        if analysis:
+            st.markdown('<div class="metric-row">', unsafe_allow_html=True)
+            metric_a, metric_b, metric_c = st.columns(3)
+            with metric_a:
+                show_metric("Detected key", analysis["detected_key"], accent=True)
+            with metric_b:
+                show_metric("Tuning offset", f'{signed_number(analysis["tuning_offset"])} cents')
+            with metric_c:
+                show_metric("Duration", format_duration(analysis["duration"]))
+            st.markdown("</div>", unsafe_allow_html=True)
+
+            st.caption(
+                f'Sample rate: {analysis["sample_rate"]:,} Hz. Key confidence: {analysis["confidence"]:.0%}.'
             )
+        else:
+            st.markdown(
+                '<p class="section-copy">Analyze the upload to unlock key matching and export controls.</p>',
+                unsafe_allow_html=True,
+            )
+
+with right_col:
+    with st.container(border=True):
+        st.markdown('<p class="section-title">Tuning Controls</p>', unsafe_allow_html=True)
+
+        if not analysis:
+            st.selectbox("Target key", KEY_NAMES, disabled=True)
+            st.button("Render tuned audio", disabled=True, use_container_width=True)
+        else:
+            mode = st.radio(
+                "Mode",
+                ["Match key", "Manual shift"],
+                horizontal=True,
+                on_change=reset_processed_output,
+            )
+
+            if mode == "Match key":
+                default_key = analysis["detected_key"]
+                desired_key = st.selectbox(
+                    "Target key",
+                    KEY_NAMES,
+                    index=KEY_NAMES.index(default_key),
+                    on_change=reset_processed_output,
+                )
+                correct_tuning = st.checkbox(
+                    "Correct tuning offset",
+                    value=True,
+                    on_change=reset_processed_output,
+                )
+                key_shift = shortest_key_shift(analysis["detected_key"], desired_key)
+                fine_shift = -(analysis["tuning_offset"] / 100) if correct_tuning else 0
+                total_shift = key_shift + fine_shift
+                shift_label = f'{analysis["detected_key"]} to {desired_key}'
+            else:
+                manual_semitones = st.slider(
+                    "Semitones",
+                    min_value=-12,
+                    max_value=12,
+                    value=0,
+                    step=1,
+                    on_change=reset_processed_output,
+                )
+                manual_cents = st.slider(
+                    "Cents",
+                    min_value=-100,
+                    max_value=100,
+                    value=0,
+                    step=1,
+                    on_change=reset_processed_output,
+                )
+                total_shift = manual_semitones + (manual_cents / 100)
+                shift_label = "Manual"
+
+            st.markdown(
+                f"""
+                <div class="shift-readout">
+                    <span>{shift_label}</span>
+                    <strong>{signed_number(total_shift)} st</strong>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            if st.button("Render tuned audio", type="primary", use_container_width=True):
+                with st.spinner("Rendering from the original upload..."):
+                    try:
+                        fixed_file_path = shift_audio(st.session_state.audio_path, total_shift)
+                        st.session_state.fixed_file_path = fixed_file_path
+                        st.session_state.last_shift = total_shift
+                    except Exception as exc:
+                        st.error(f"Could not tune this file: {exc}")
+
+if st.session_state.get("fixed_file_path"):
+    st.divider()
+    st.subheader("Compare and Export")
+    before_col, after_col = st.columns(2, gap="large")
+
+    with before_col:
+        with st.container(border=True):
+            st.markdown('<p class="section-title">Original</p>', unsafe_allow_html=True)
+            st.audio(st.session_state.uploaded_audio)
+
+    with after_col:
+        with st.container(border=True):
+            st.markdown(
+                f'<p class="section-title">Tuned ({signed_number(st.session_state.last_shift)} st)</p>',
+                unsafe_allow_html=True,
+            )
+            st.audio(st.session_state.fixed_file_path, format="audio/wav")
+
+            with open(st.session_state.fixed_file_path, "rb") as fixed_file:
+                st.download_button(
+                    label="Download tuned WAV",
+                    data=fixed_file,
+                    file_name="tuned.wav",
+                    mime="audio/wav",
+                    type="primary",
+                    use_container_width=True,
+                )
