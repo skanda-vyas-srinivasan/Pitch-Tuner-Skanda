@@ -212,21 +212,29 @@ def inject_styles():
             background-color: var(--studio-accent);
         }}
 
+        .download-cue-row {{
+            display: grid;
+            gap: 2.25rem;
+            grid-template-columns: 1.05fr 1fr 1.1fr;
+            margin: 0.85rem 0 1.35rem;
+        }}
+
+        .download-cue-cell {{
+            align-items: center;
+            display: flex;
+            justify-content: center;
+        }}
+
         .download-jump {{
             align-items: center;
             display: flex;
             flex-direction: column;
             gap: 0.35rem;
             justify-content: center;
-            left: 50%;
             opacity: 0.8;
-            position: fixed;
             text-decoration: none !important;
-            top: 77vh;
-            transform: translateX(-50%);
             transition: opacity 160ms ease;
             width: max-content;
-            z-index: 60;
         }}
 
         .download-jump:hover,
@@ -263,8 +271,9 @@ def inject_styles():
         }}
 
         @media (max-width: 760px) {{
-            .download-jump {{
-                top: 82vh;
+            .download-cue-row {{
+                display: flex;
+                justify-content: center;
             }}
         }}
 
@@ -484,17 +493,6 @@ with middle_col:
         else:
             st.empty()
 
-    if st.session_state.get("fixed_file_path"):
-        st.markdown(
-            """
-            <a class="download-jump" href="#download-export">
-                <span class="download-jump-text">Scroll down</span>
-                <span class="download-jump-chevron">⌄</span>
-            </a>
-            """,
-            unsafe_allow_html=True,
-        )
-
 with right_col:
     with st.container(border=True):
         st.markdown('<p class="section-title">Tuning Controls</p>', unsafe_allow_html=True)
@@ -567,6 +565,21 @@ with right_col:
                         st.error(f"Could not tune this file: {exc}")
 
 if st.session_state.get("fixed_file_path"):
+    st.markdown(
+        """
+        <div class="download-cue-row">
+            <div></div>
+            <div class="download-cue-cell">
+                <a class="download-jump" href="#download-export">
+                    <span class="download-jump-text">Scroll down</span>
+                    <span class="download-jump-chevron">⌄</span>
+                </a>
+            </div>
+            <div></div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     st.divider()
     st.markdown('<div id="download-export" class="download-anchor"></div>', unsafe_allow_html=True)
     with st.container(border=True):
