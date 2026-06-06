@@ -214,23 +214,62 @@ def inject_styles():
 
         .download-jump {{
             align-items: center;
-            color: var(--studio-muted);
+            animation: download-bounce 1.1s ease-in-out infinite;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.24);
+            border-radius: 999px;
+            bottom: 1.35rem;
+            color: rgba(255, 255, 255, 0.78);
             display: flex;
-            font-size: 0.9rem;
-            gap: 0.35rem;
-            justify-content: flex-end;
-            margin: 0.1rem 0 0.75rem;
+            font-size: 2.15rem;
+            font-weight: 900;
+            height: 4rem;
+            justify-content: center;
+            left: 50%;
+            line-height: 1;
+            position: fixed;
             text-decoration: none;
+            transform: translateX(-50%);
+            width: 4rem;
+            z-index: 60;
         }}
 
-        .download-jump span {{
-            color: var(--studio-accent);
-            font-size: 1rem;
-            line-height: 1;
+        .download-jump:hover {{
+            background: rgba(255, 255, 255, 0.14);
+            color: rgba(255, 255, 255, 0.92);
+        }}
+
+        @keyframes download-bounce {{
+            0%, 100% {{
+                transform: translate(-50%, 0);
+            }}
+            50% {{
+                transform: translate(-50%, 0.55rem);
+            }}
         }}
 
         .download-anchor {{
             scroll-margin-top: 1.25rem;
+        }}
+
+        @supports (animation-timeline: view()) {{
+            .download-jump {{
+                animation:
+                    download-bounce 1.1s ease-in-out infinite,
+                    download-fade linear both;
+                animation-timeline: auto, view();
+                animation-range: normal, entry 0% cover 35%;
+            }}
+
+            @keyframes download-fade {{
+                from {{
+                    opacity: 0.9;
+                }}
+                to {{
+                    opacity: 0;
+                    pointer-events: none;
+                }}
+            }}
         }}
 
         .floating-linkedin {{
@@ -517,10 +556,7 @@ with right_col:
                         st.error(f"Could not tune this file: {exc}")
 
 if st.session_state.get("fixed_file_path"):
-    st.markdown(
-        '<a class="download-jump" href="#download-export">Download below <span>↓</span></a>',
-        unsafe_allow_html=True,
-    )
+    st.markdown('<a class="download-jump" href="#download-export">↓</a>', unsafe_allow_html=True)
     st.divider()
     st.markdown('<div id="download-export" class="download-anchor"></div>', unsafe_allow_html=True)
     with st.container(border=True):
