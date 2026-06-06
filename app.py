@@ -218,20 +218,16 @@ def inject_styles():
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.24);
             border-radius: 999px;
-            bottom: 1.35rem;
             color: rgba(255, 255, 255, 0.78);
             display: flex;
             font-size: 2.15rem;
             font-weight: 900;
             height: 4rem;
             justify-content: center;
-            left: 50%;
             line-height: 1;
-            position: fixed;
+            margin: 0.25rem auto 0.9rem;
             text-decoration: none;
-            transform: translateX(-50%);
             width: 4rem;
-            z-index: 60;
         }}
 
         .download-jump:hover {{
@@ -241,35 +237,15 @@ def inject_styles():
 
         @keyframes download-bounce {{
             0%, 100% {{
-                transform: translate(-50%, 0);
+                transform: translateY(0);
             }}
             50% {{
-                transform: translate(-50%, 0.55rem);
+                transform: translateY(0.55rem);
             }}
         }}
 
         .download-anchor {{
             scroll-margin-top: 1.25rem;
-        }}
-
-        @supports (animation-timeline: view()) {{
-            .download-jump {{
-                animation:
-                    download-bounce 1.1s ease-in-out infinite,
-                    download-fade linear both;
-                animation-timeline: auto, view();
-                animation-range: normal, entry 0% cover 35%;
-            }}
-
-            @keyframes download-fade {{
-                from {{
-                    opacity: 0.9;
-                }}
-                to {{
-                    opacity: 0;
-                    pointer-events: none;
-                }}
-            }}
         }}
 
         .floating-linkedin {{
