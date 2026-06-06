@@ -218,7 +218,7 @@ def inject_styles():
             flex-direction: column;
             gap: 0.35rem;
             justify-content: center;
-            margin: 1.5rem auto 1.25rem;
+            margin: 0.75rem auto 0;
             opacity: 0.72;
             text-decoration: none !important;
             transition: opacity 160ms ease;
@@ -474,6 +474,17 @@ with middle_col:
         else:
             st.empty()
 
+    if st.session_state.get("fixed_file_path"):
+        st.markdown(
+            """
+            <a class="download-jump" href="#download-export">
+                <span class="download-jump-text">Scroll down</span>
+                <span class="download-jump-chevron">⌄</span>
+            </a>
+            """,
+            unsafe_allow_html=True,
+        )
+
 with right_col:
     with st.container(border=True):
         st.markdown('<p class="section-title">Tuning Controls</p>', unsafe_allow_html=True)
@@ -544,17 +555,6 @@ with right_col:
                         st.session_state.last_shift = total_shift
                     except Exception as exc:
                         st.error(f"Could not tune this file: {exc}")
-
-    if st.session_state.get("fixed_file_path"):
-        st.markdown(
-            """
-            <a class="download-jump" href="#download-export">
-                <span class="download-jump-text">Scroll down</span>
-                <span class="download-jump-chevron">⌄</span>
-            </a>
-            """,
-            unsafe_allow_html=True,
-        )
 
 if st.session_state.get("fixed_file_path"):
     st.divider()
