@@ -29,26 +29,37 @@ def inject_styles():
         f"""
         <style>
         :root {{
-            --studio-bg: #0d0f14;
-            --studio-panel: #171b23;
-            --studio-panel-2: #202633;
-            --studio-border: #343d4f;
-            --studio-text: #f3f5f8;
-            --studio-muted: #aab2c1;
-            --studio-accent: #43d9ad;
-            --studio-warn: #f2b15f;
+            --studio-bg: #121212;
+            --studio-panel: #222222;
+            --studio-panel-2: #222222;
+            --studio-border: #343434;
+            --studio-text: #b16cd3;
+            --studio-muted: #c7a3d8;
+            --studio-accent: #c45cff;
+            --studio-accent-2: #ff5fc8;
+            --studio-warn: #e0a84f;
+        }}
+
+        html {{
+            accent-color: var(--studio-accent);
         }}
 
         .stApp {{
-            background:
-                radial-gradient(circle at 12% 12%, rgba(67, 217, 173, 0.10), transparent 24rem),
-                linear-gradient(135deg, #0d0f14 0%, #151923 50%, #10131a 100%);
+            background: var(--studio-bg);
+            accent-color: var(--studio-accent);
+        }}
+
+        [data-testid="stAppViewContainer"],
+        [data-testid="stMain"],
+        [data-testid="stMainBlockContainer"] {{
+            background: var(--studio-bg);
         }}
 
         .block-container {{
             max-width: 1180px;
-            padding-top: 2rem;
+            padding-top: 1.5rem;
             padding-bottom: 4rem;
+            background: transparent;
         }}
 
         h1, h2, h3, p, label, span, div {{
@@ -56,14 +67,16 @@ def inject_styles():
         }}
 
         .hero {{
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            margin-bottom: 1.35rem;
-            padding-bottom: 1.1rem;
+            background: var(--studio-panel);
+            border: 1px solid var(--studio-border);
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            padding: 1rem 1.25rem 1.2rem;
         }}
 
         .hero h1 {{
             color: var(--studio-text);
-            font-size: clamp(2.25rem, 5vw, 4.25rem);
+            font-size: clamp(2rem, 4vw, 3.4rem);
             line-height: 0.95;
             margin: 0 0 0.55rem;
             text-wrap: balance;
@@ -77,32 +90,39 @@ def inject_styles():
         }}
 
         .metric-row {{
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
             margin: 0.35rem 0 1rem;
         }}
 
         .metric {{
-            background: rgba(255, 255, 255, 0.045);
-            border: 1px solid rgba(255, 255, 255, 0.10);
+            align-items: center;
+            background: var(--studio-panel);
+            border: 1px solid var(--studio-border);
             border-radius: 10px;
-            padding: 0.9rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            min-height: 3.2rem;
+            padding: 0.7rem 0.85rem;
         }}
 
         .metric .label {{
             color: var(--studio-muted);
             display: block;
-            font-size: 0.82rem;
-            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+            line-height: 1.25;
+            margin: 0;
         }}
 
         .metric .value {{
             color: var(--studio-text);
             display: block;
-            font-size: 1.35rem;
+            font-size: 1.15rem;
             font-weight: 750;
             line-height: 1.1;
+            overflow-wrap: anywhere;
+            text-align: right;
         }}
 
         .metric .value.accent {{
@@ -131,8 +151,8 @@ def inject_styles():
 
         .shift-readout {{
             align-items: center;
-            background: linear-gradient(135deg, rgba(67, 217, 173, 0.12), rgba(242, 177, 95, 0.08));
-            border: 1px solid rgba(67, 217, 173, 0.30);
+            background: var(--studio-panel);
+            border: 1px solid var(--studio-border);
             border-radius: 10px;
             display: flex;
             justify-content: space-between;
@@ -150,9 +170,14 @@ def inject_styles():
             font-size: 1.35rem;
         }}
 
-        div[data-testid="stVerticalBlockBorderWrapper"] {{
-            background: rgba(23, 27, 35, 0.86);
-            border-color: rgba(255, 255, 255, 0.10);
+        [data-testid="stFileUploader"] {{
+            margin-bottom: 0.35rem;
+        }}
+
+        [data-testid="stFileUploaderDropzone"] {{
+            background: #191919;
+            border: 1px dashed #464646;
+            border-radius: 14px;
         }}
 
         .stButton > button, .stDownloadButton > button {{
@@ -162,9 +187,36 @@ def inject_styles():
         }}
 
         .stButton > button[kind="primary"], .stDownloadButton > button[kind="primary"] {{
-            background: var(--studio-accent);
+            background: linear-gradient(135deg, var(--studio-accent), var(--studio-accent-2));
             border-color: var(--studio-accent);
-            color: #07130f;
+            color: #ffffff;
+        }}
+
+        .stButton > button[kind="primary"]:hover,
+        .stDownloadButton > button[kind="primary"]:hover {{
+            border-color: var(--studio-accent-2);
+            color: #ffffff;
+            filter: brightness(1.05);
+        }}
+
+        audio {{
+            accent-color: var(--studio-accent);
+        }}
+
+        audio::-webkit-media-controls-play-button,
+        audio::-webkit-media-controls-mute-button,
+        audio::-webkit-media-controls-timeline,
+        audio::-webkit-media-controls-volume-slider {{
+            filter: hue-rotate(72deg) saturate(1.4);
+        }}
+
+        div[data-testid="stSpinner"] > div {{
+            border-top-color: var(--studio-accent) !important;
+            border-right-color: var(--studio-accent-2) !important;
+        }}
+
+        .stProgress > div > div > div > div {{
+            background-color: var(--studio-accent);
         }}
 
         .floating-linkedin {{
@@ -293,6 +345,28 @@ def show_metric(label, value, accent=False):
     )
 
 
+def render_analysis_metrics(analysis):
+    st.markdown(
+        f"""
+        <div class="metric-row">
+            <div class="metric">
+                <span class="label">Detected key</span>
+                <span class="value accent">{analysis["detected_key"]}</span>
+            </div>
+            <div class="metric">
+                <span class="label">Tuning offset</span>
+                <span class="value">{signed_number(analysis["tuning_offset"])} cents</span>
+            </div>
+            <div class="metric">
+                <span class="label">Duration</span>
+                <span class="value">{format_duration(analysis["duration"])}</span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def reset_processed_output():
     st.session_state.pop("fixed_file_path", None)
     st.session_state.pop("last_shift", None)
@@ -310,7 +384,8 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-uploaded_file = st.file_uploader("Upload WAV or MP3", type=["wav", "mp3"])
+with st.container(border=True):
+    uploaded_file = st.file_uploader("Upload WAV or MP3", type=["wav", "mp3"])
 
 if uploaded_file:
     file_signature = (uploaded_file.name, uploaded_file.size)
@@ -354,15 +429,7 @@ with middle_col:
         st.markdown('<p class="section-title">Pitch Analysis</p>', unsafe_allow_html=True)
 
         if analysis:
-            st.markdown('<div class="metric-row">', unsafe_allow_html=True)
-            metric_a, metric_b, metric_c = st.columns(3)
-            with metric_a:
-                show_metric("Detected key", analysis["detected_key"], accent=True)
-            with metric_b:
-                show_metric("Tuning offset", f'{signed_number(analysis["tuning_offset"])} cents')
-            with metric_c:
-                show_metric("Duration", format_duration(analysis["duration"]))
-            st.markdown("</div>", unsafe_allow_html=True)
+            render_analysis_metrics(analysis)
 
             st.caption(
                 f'Sample rate: {analysis["sample_rate"]:,} Hz. Key confidence: {analysis["confidence"]:.0%}.'
