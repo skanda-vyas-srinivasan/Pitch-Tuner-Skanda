@@ -218,11 +218,15 @@ def inject_styles():
             flex-direction: column;
             gap: 0.35rem;
             justify-content: center;
-            margin: 0.75rem auto 0;
-            opacity: 0.72;
+            left: 50%;
+            opacity: 0.8;
+            position: fixed;
             text-decoration: none !important;
+            top: 77vh;
+            transform: translateX(-50%);
             transition: opacity 160ms ease;
             width: max-content;
+            z-index: 60;
         }}
 
         .download-jump:hover,
@@ -255,6 +259,12 @@ def inject_styles():
             }}
             50% {{
                 transform: translateY(0.35rem);
+            }}
+        }}
+
+        @media (max-width: 760px) {{
+            .download-jump {{
+                top: 82vh;
             }}
         }}
 
