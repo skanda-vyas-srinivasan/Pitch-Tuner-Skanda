@@ -216,7 +216,7 @@ def inject_styles():
             display: grid;
             gap: 2.25rem;
             grid-template-columns: 1.05fr 1fr 1.1fr;
-            margin: 0.85rem 0 1.35rem;
+            margin: -3.25rem 0 1.15rem;
         }}
 
         .download-cue-cell {{
