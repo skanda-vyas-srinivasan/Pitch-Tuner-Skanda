@@ -35,8 +35,8 @@ def inject_styles():
             --studio-border: #343434;
             --studio-text: #b16cd3;
             --studio-muted: #c7a3d8;
-            --studio-accent: #c45cff;
-            --studio-accent-2: #ff5fc8;
+            --studio-accent: #b16cd3;
+            --studio-accent-2: #c986e6;
             --studio-warn: #e0a84f;
         }}
 
@@ -180,7 +180,7 @@ def inject_styles():
         }}
 
         .stButton > button[kind="primary"], .stDownloadButton > button[kind="primary"] {{
-            background: linear-gradient(135deg, var(--studio-accent), var(--studio-accent-2));
+            background: var(--studio-accent);
             border-color: var(--studio-accent);
             color: #ffffff;
         }}
@@ -214,25 +214,33 @@ def inject_styles():
 
         .download-jump {{
             align-items: center;
-            animation: download-bounce 1.1s ease-in-out infinite;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.24);
-            border-radius: 999px;
-            color: rgba(255, 255, 255, 0.78);
             display: flex;
-            font-size: 2.15rem;
-            font-weight: 900;
-            height: 4rem;
+            flex-direction: column;
+            gap: 0.35rem;
             justify-content: center;
-            line-height: 1;
-            margin: 0.25rem auto 0.9rem;
+            margin-top: 0.75rem;
+            opacity: 0.72;
             text-decoration: none;
-            width: 4rem;
+            transition: opacity 160ms ease;
         }}
 
         .download-jump:hover {{
-            background: rgba(255, 255, 255, 0.14);
-            color: rgba(255, 255, 255, 0.92);
+            opacity: 1;
+        }}
+
+        .download-jump-text {{
+            color: #8f86a8;
+            font-size: 0.62rem;
+            font-weight: 750;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+        }}
+
+        .download-jump-chevron {{
+            animation: download-bounce 1.15s ease-in-out infinite;
+            color: #8f86a8;
+            font-size: 1.35rem;
+            line-height: 1;
         }}
 
         @keyframes download-bounce {{
@@ -240,7 +248,7 @@ def inject_styles():
                 transform: translateY(0);
             }}
             50% {{
-                transform: translateY(0.55rem);
+                transform: translateY(0.35rem);
             }}
         }}
 
@@ -531,8 +539,18 @@ with right_col:
                     except Exception as exc:
                         st.error(f"Could not tune this file: {exc}")
 
+            if st.session_state.get("fixed_file_path"):
+                st.markdown(
+                    """
+                    <a class="download-jump" href="#download-export">
+                        <span class="download-jump-text">Scroll down</span>
+                        <span class="download-jump-chevron">⌄</span>
+                    </a>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
 if st.session_state.get("fixed_file_path"):
-    st.markdown('<a class="download-jump" href="#download-export">↓</a>', unsafe_allow_html=True)
     st.divider()
     st.markdown('<div id="download-export" class="download-anchor"></div>', unsafe_allow_html=True)
     with st.container(border=True):
