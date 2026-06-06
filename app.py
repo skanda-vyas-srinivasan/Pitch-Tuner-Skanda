@@ -78,15 +78,8 @@ def inject_styles():
             color: var(--studio-text);
             font-size: clamp(2rem, 4vw, 3.4rem);
             line-height: 0.95;
-            margin: 0 0 0.55rem;
-            text-wrap: balance;
-        }}
-
-        .hero p {{
-            color: var(--studio-muted);
-            font-size: 1.05rem;
-            max-width: 68ch;
             margin: 0;
+            text-wrap: balance;
         }}
 
         .metric-row {{
@@ -217,6 +210,29 @@ def inject_styles():
 
         .stProgress > div > div > div > div {{
             background-color: var(--studio-accent);
+        }}
+
+        .download-jump {{
+            align-items: center;
+            background: linear-gradient(135deg, var(--studio-accent), var(--studio-accent-2));
+            border-radius: 999px;
+            bottom: 18px;
+            color: #ffffff;
+            display: flex;
+            font-size: 1.35rem;
+            font-weight: 800;
+            height: 3rem;
+            justify-content: center;
+            left: 50%;
+            position: fixed;
+            text-decoration: none;
+            transform: translateX(-50%);
+            width: 3rem;
+            z-index: 60;
+        }}
+
+        .download-anchor {{
+            scroll-margin-top: 1.25rem;
         }}
 
         .floating-linkedin {{
@@ -378,7 +394,6 @@ st.markdown(
     """
     <div class="hero">
         <h1>Skanda's Pitch Tuner</h1>
-        <p>Upload a track, detect its key, tune it once from the original file, then compare the before and after audio.</p>
     </div>
     """,
     unsafe_allow_html=True,
@@ -417,11 +432,6 @@ with left_col:
                 except Exception as exc:
                     st.error(f"Could not analyze this file: {exc}")
 
-        st.markdown(
-            '<p class="hint">Analysis runs on the original upload. Rendering also starts from the original, so each export avoids stacked pitch shifts.</p>',
-            unsafe_allow_html=True,
-        )
-
 analysis = st.session_state.get("analysis")
 
 with middle_col:
@@ -435,10 +445,7 @@ with middle_col:
                 f'Sample rate: {analysis["sample_rate"]:,} Hz. Key confidence: {analysis["confidence"]:.0%}.'
             )
         else:
-            st.markdown(
-                '<p class="section-copy">Analyze the upload to unlock key matching and export controls.</p>',
-                unsafe_allow_html=True,
-            )
+            st.empty()
 
 with right_col:
     with st.container(border=True):
@@ -512,29 +519,22 @@ with right_col:
                         st.error(f"Could not tune this file: {exc}")
 
 if st.session_state.get("fixed_file_path"):
+    st.markdown('<a class="download-jump" href="#download-export">↓</a>', unsafe_allow_html=True)
     st.divider()
-    st.subheader("Compare and Export")
-    before_col, after_col = st.columns(2, gap="large")
+    st.markdown('<div id="download-export" class="download-anchor"></div>', unsafe_allow_html=True)
+    with st.container(border=True):
+        st.markdown(
+            f'<p class="section-title">Tuned ({signed_number(st.session_state.last_shift)} st)</p>',
+            unsafe_allow_html=True,
+        )
+        st.audio(st.session_state.fixed_file_path, format="audio/wav")
 
-    with before_col:
-        with st.container(border=True):
-            st.markdown('<p class="section-title">Original</p>', unsafe_allow_html=True)
-            st.audio(st.session_state.uploaded_audio)
-
-    with after_col:
-        with st.container(border=True):
-            st.markdown(
-                f'<p class="section-title">Tuned ({signed_number(st.session_state.last_shift)} st)</p>',
-                unsafe_allow_html=True,
+        with open(st.session_state.fixed_file_path, "rb") as fixed_file:
+            st.download_button(
+                label="Download tuned WAV",
+                data=fixed_file,
+                file_name="tuned.wav",
+                mime="audio/wav",
+                type="primary",
+                use_container_width=True,
             )
-            st.audio(st.session_state.fixed_file_path, format="audio/wav")
-
-            with open(st.session_state.fixed_file_path, "rb") as fixed_file:
-                st.download_button(
-                    label="Download tuned WAV",
-                    data=fixed_file,
-                    file_name="tuned.wav",
-                    mime="audio/wav",
-                    type="primary",
-                    use_container_width=True,
-                )
