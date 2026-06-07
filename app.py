@@ -464,7 +464,6 @@ if uploaded_file:
         reset_processed_output()
 
 if not st.session_state.get("audio_path"):
-    st.info("Upload a WAV or MP3 to begin.")
     st.stop()
 
 left_col, middle_col, right_col = st.columns([1.05, 1, 1.1], gap="large")
@@ -521,13 +520,8 @@ with right_col:
                     index=KEY_NAMES.index(default_key),
                     on_change=reset_processed_output,
                 )
-                correct_tuning = st.checkbox(
-                    "Correct tuning offset",
-                    value=True,
-                    on_change=reset_processed_output,
-                )
                 key_shift = shortest_key_shift(analysis["detected_key"], desired_key)
-                fine_shift = -(analysis["tuning_offset"] / 100) if correct_tuning else 0
+                fine_shift = -(analysis["tuning_offset"] / 100)
                 total_shift = key_shift + fine_shift
                 shift_label = f'{analysis["detected_key"]} to {desired_key}'
             else:
