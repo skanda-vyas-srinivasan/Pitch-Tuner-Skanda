@@ -162,6 +162,17 @@ def inject_styles():
             font-size: 1.35rem;
         }}
 
+        .custom-warning {{
+            background: rgba(224, 168, 79, 0.12);
+            border: 1px solid rgba(224, 168, 79, 0.38);
+            border-radius: 8px;
+            color: #f0c272;
+            font-size: 0.86rem;
+            line-height: 1.35;
+            margin: -0.45rem 0 1rem;
+            padding: 0.7rem 0.8rem;
+        }}
+
         [data-testid="stFileUploader"] {{
             margin-bottom: 0.35rem;
         }}
@@ -468,10 +479,6 @@ def render_analysis_metrics(analysis):
                 <span class="label">Tuning offset</span>
                 <span class="value">{signed_number(analysis["tuning_offset"])} cents</span>
             </div>
-            <div class="metric">
-                <span class="label">Duration</span>
-                <span class="value">{format_duration(analysis["duration"])}</span>
-            </div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -481,6 +488,30 @@ def render_analysis_metrics(analysis):
 def reset_processed_output():
     st.session_state.pop("fixed_file_path", None)
     st.session_state.pop("last_shift", None)
+
+
+def render_tuned_audio(total_shift, spinner_text):
+    with st.spinner(spinner_text):
+        try:
+            fixed_file_path = shift_audio(st.session_state.audio_path, total_shift)
+            st.session_state.fixed_file_path = fixed_file_path
+            st.session_state.last_shift = total_shift
+        except Exception as exc:
+            st.error(f"Could not tune this file: {exc}")
+
+
+def show_custom_shift_warning(total_shift):
+    if abs(total_shift) < 6:
+        return
+
+    st.markdown(
+        """
+        <div class="custom-warning">
+            Extreme pitch shifts can make the result sound distorted or unstable.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 inject_styles()
@@ -510,6 +541,8 @@ if uploaded_file:
 if not st.session_state.get("audio_path"):
     st.stop()
 
+analysis = st.session_state.get("analysis")
+
 left_col, middle_col, right_col = st.columns([1.05, 1, 1.1], gap="large")
 
 with left_col:
@@ -521,91 +554,107 @@ with left_col:
         if st.button("Analyze pitch", type="primary", use_container_width=True):
             with st.spinner("Listening for key and tuning offset..."):
                 try:
-                    st.session_state.analysis = analyze_audio(st.session_state.audio_path)
+                    analysis = analyze_audio(st.session_state.audio_path)
+                    st.session_state.analysis = analysis
                     reset_processed_output()
                 except Exception as exc:
                     st.error(f"Could not analyze this file: {exc}")
 
-analysis = st.session_state.get("analysis")
-
-with middle_col:
-    with st.container(border=True):
-        st.markdown('<p class="section-title">Pitch Analysis</p>', unsafe_allow_html=True)
-
-        if analysis:
+if analysis:
+    with middle_col:
+        with st.container(border=True):
+            st.markdown('<p class="section-title">Pitch Analysis</p>', unsafe_allow_html=True)
             render_analysis_metrics(analysis)
 
-            st.caption(
-                f'Sample rate: {analysis["sample_rate"]:,} Hz. Key confidence: {analysis["confidence"]:.0%}.'
-            )
-        else:
-            st.empty()
+    with right_col:
+        with st.container(border=True):
+            st.markdown('<p class="section-title">Tuning Controls</p>', unsafe_allow_html=True)
 
-with right_col:
-    with st.container(border=True):
-        st.markdown('<p class="section-title">Tuning Controls</p>', unsafe_allow_html=True)
-
-        if not analysis:
-            st.selectbox("Target key", KEY_NAMES, disabled=True)
-            st.button("Render tuned audio", disabled=True, use_container_width=True)
-        else:
-            mode = st.radio(
-                "Mode",
-                ["Match key", "Manual shift"],
-                horizontal=True,
-                on_change=reset_processed_output,
-            )
-
-            if mode == "Match key":
-                default_key = analysis["detected_key"]
-                desired_key = st.selectbox(
-                    "Target key",
-                    KEY_NAMES,
-                    index=KEY_NAMES.index(default_key),
-                    on_change=reset_processed_output,
-                )
-                key_shift = shortest_key_shift(analysis["detected_key"], desired_key)
-                fine_shift = -(analysis["tuning_offset"] / 100)
-                total_shift = key_shift + fine_shift
-                shift_label = f'{analysis["detected_key"]} to {desired_key}'
-            else:
-                manual_semitones = st.slider(
-                    "Semitones",
-                    min_value=-12,
-                    max_value=12,
-                    value=0,
-                    step=1,
-                    on_change=reset_processed_output,
-                )
-                manual_cents = st.slider(
-                    "Cents",
-                    min_value=-100,
-                    max_value=100,
-                    value=0,
-                    step=1,
-                    on_change=reset_processed_output,
-                )
-                total_shift = manual_semitones + (manual_cents / 100)
-                shift_label = "Manual"
-
+            retune_shift = -(analysis["tuning_offset"] / 100)
             st.markdown(
                 f"""
                 <div class="shift-readout">
-                    <span>{shift_label}</span>
-                    <strong>{signed_number(total_shift)} st</strong>
+                    <span>Corrected key</span>
+                    <strong>{analysis["detected_key"]}</strong>
+                </div>
+                <div class="shift-readout">
+                    <span>Correction</span>
+                    <strong>{signed_number(retune_shift)} st</strong>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
 
-            if st.button("Render tuned audio", type="primary", use_container_width=True):
-                with st.spinner("Rendering from the original upload..."):
-                    try:
-                        fixed_file_path = shift_audio(st.session_state.audio_path, total_shift)
-                        st.session_state.fixed_file_path = fixed_file_path
-                        st.session_state.last_shift = total_shift
-                    except Exception as exc:
-                        st.error(f"Could not tune this file: {exc}")
+            if st.button("Apply retune", type="primary", use_container_width=True):
+                render_tuned_audio(
+                    retune_shift,
+                    "Applying retune from the original upload...",
+                )
+
+            with st.expander("More pitch options"):
+                mode = st.radio(
+                    "Mode",
+                    ["Change key", "Manual shift"],
+                    horizontal=True,
+                    on_change=reset_processed_output,
+                )
+
+                if mode == "Change key":
+                    default_key = analysis["detected_key"]
+                    desired_key = st.selectbox(
+                        "Target key",
+                        KEY_NAMES,
+                        index=KEY_NAMES.index(default_key),
+                        on_change=reset_processed_output,
+                    )
+                    key_shift = shortest_key_shift(analysis["detected_key"], desired_key)
+                    total_shift = key_shift + retune_shift
+                    shift_rows = f"""
+                    <div class="shift-readout">
+                        <span>Corrected key</span>
+                        <strong>{desired_key}</strong>
+                    </div>
+                    <div class="shift-readout">
+                        <span>Correction</span>
+                        <strong>{signed_number(total_shift)} st</strong>
+                    </div>
+                    """
+                else:
+                    manual_semitones = st.slider(
+                        "Semitones",
+                        min_value=-12,
+                        max_value=12,
+                        value=0,
+                        step=1,
+                        on_change=reset_processed_output,
+                    )
+                    manual_cents = st.slider(
+                        "Cents",
+                        min_value=-100,
+                        max_value=100,
+                        value=0,
+                        step=1,
+                        on_change=reset_processed_output,
+                    )
+                    total_shift = manual_semitones + (manual_cents / 100)
+                    shift_rows = f"""
+                    <div class="shift-readout">
+                        <span>Correction</span>
+                        <strong>{signed_number(total_shift)} st</strong>
+                    </div>
+                    """
+
+                st.markdown(
+                    shift_rows,
+                    unsafe_allow_html=True,
+                )
+                show_custom_shift_warning(total_shift)
+
+                if st.button("Apply retune", use_container_width=True):
+                    render_tuned_audio(
+                        total_shift,
+                        "Applying retune from the original upload...",
+                    )
 
 if st.session_state.get("fixed_file_path"):
     st.markdown(
