@@ -400,13 +400,43 @@ def pitch_shift_audio(audio, sample_rate, semitone_shift):
     return np.vstack(shifted_channels)
 
 
+def export_audio(audio, sample_rate, source_path):
+    source_suffix = Path(source_path).suffix.lower()
+    output_suffix = ".mp3" if source_suffix == ".mp3" else ".wav"
+    write_kwargs = {}
+
+    if output_suffix == ".mp3":
+        write_kwargs = {"format": "MP3", "subtype": "MPEG_LAYER_III"}
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=output_suffix) as fixed_file:
+        sf.write(
+            fixed_file.name,
+            audio.T if audio.ndim > 1 else audio,
+            sample_rate,
+            **write_kwargs,
+        )
+        return fixed_file.name
+
+
 def shift_audio(file_path, semitone_shift):
     y, sr = librosa.load(file_path, sr=None, mono=False)
     y_shifted = pitch_shift_audio(y, sr, semitone_shift)
+    return export_audio(y_shifted, sr, file_path)
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as fixed_file:
-        sf.write(fixed_file.name, y_shifted.T if y_shifted.ndim > 1 else y_shifted, sr)
-        return fixed_file.name
+
+def export_download_details(file_path):
+    if Path(file_path).suffix.lower() == ".mp3":
+        return {
+            "label": "Download tuned MP3",
+            "file_name": "tuned.mp3",
+            "mime": "audio/mpeg",
+        }
+
+    return {
+        "label": "Download tuned WAV",
+        "file_name": "tuned.wav",
+        "mime": "audio/wav",
+    }
 
 
 def show_metric(label, value, accent=False):
@@ -595,14 +625,15 @@ if st.session_state.get("fixed_file_path"):
             f'<p class="section-title">Tuned ({signed_number(st.session_state.last_shift)} st)</p>',
             unsafe_allow_html=True,
         )
-        st.audio(st.session_state.fixed_file_path, format="audio/wav")
+        download_details = export_download_details(st.session_state.fixed_file_path)
+        st.audio(st.session_state.fixed_file_path, format=download_details["mime"])
 
         with open(st.session_state.fixed_file_path, "rb") as fixed_file:
             st.download_button(
-                label="Download tuned WAV",
+                label=download_details["label"],
                 data=fixed_file,
-                file_name="tuned.wav",
-                mime="audio/wav",
+                file_name=download_details["file_name"],
+                mime=download_details["mime"],
                 type="primary",
                 use_container_width=True,
             )
