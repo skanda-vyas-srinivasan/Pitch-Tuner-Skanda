@@ -406,7 +406,11 @@ def export_audio(audio, sample_rate, source_path):
     write_kwargs = {}
 
     if output_suffix == ".mp3":
-        write_kwargs = {"format": "MP3", "subtype": "MPEG_LAYER_III"}
+        write_kwargs = {
+            "format": "MP3",
+            "subtype": "MPEG_LAYER_III",
+            "compression_level": 0.0,
+        }
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=output_suffix) as fixed_file:
         sf.write(
