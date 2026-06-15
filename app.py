@@ -387,15 +387,25 @@ def signed_number(value, decimals=2):
     return f"{value:+.{decimals}f}"
 
 
-def shift_audio(file_path, semitone_shift):
-    y, sr = librosa.load(file_path, sr=None, mono=True)
+def pitch_shift_audio(audio, sample_rate, semitone_shift):
     if abs(semitone_shift) < 0.001:
-        y_shifted = y
-    else:
-        y_shifted = pyrb.pitch_shift(y, sr, semitone_shift)
+        return audio
+
+    if audio.ndim == 1:
+        return pyrb.pitch_shift(audio, sample_rate, semitone_shift)
+
+    shifted_channels = [
+        pyrb.pitch_shift(channel, sample_rate, semitone_shift) for channel in audio
+    ]
+    return np.vstack(shifted_channels)
+
+
+def shift_audio(file_path, semitone_shift):
+    y, sr = librosa.load(file_path, sr=None, mono=False)
+    y_shifted = pitch_shift_audio(y, sr, semitone_shift)
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as fixed_file:
-        sf.write(fixed_file.name, y_shifted, sr)
+        sf.write(fixed_file.name, y_shifted.T if y_shifted.ndim > 1 else y_shifted, sr)
         return fixed_file.name
 
 
