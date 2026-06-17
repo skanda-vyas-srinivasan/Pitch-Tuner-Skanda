@@ -15,6 +15,93 @@ LINKEDIN_IMAGE = "https://upload.wikimedia.org/wikipedia/commons/c/ca/LinkedIn_l
 DONATION_LINK = "https://buymeacoffee.com/golgiwaffles"
 DONATION_IMAGE = "https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
 FEEDBACK_LINK = "https://forms.gle/nWfGButqLA1w48zC8"
+UPLOAD_HELP = (
+    "Supports WAV, MP3, FLAC, M4A, AAC, OGG, OPUS, AIFF, WMA, WebM, "
+    "and other audio files ffmpeg can decode."
+)
+DECODE_ERROR_MESSAGE = (
+    "This file could not be decoded. Try WAV, MP3, FLAC, AIFF, "
+    "or another ffmpeg-supported audio file."
+)
+TUNE_ERROR_MESSAGE = (
+    "This file could not be tuned or exported. Nothing was changed. "
+    "Try WAV, MP3, FLAC, or AIFF, or use a smaller pitch shift."
+)
+
+AUDIO_MIME_TYPES = {
+    ".aac": "audio/aac",
+    ".ac3": "audio/ac3",
+    ".aif": "audio/aiff",
+    ".aiff": "audio/aiff",
+    ".amr": "audio/amr",
+    ".ape": "audio/ape",
+    ".caf": "audio/x-caf",
+    ".flac": "audio/flac",
+    ".m4a": "audio/mp4",
+    ".mp4": "audio/mp4",
+    ".mp3": "audio/mpeg",
+    ".oga": "audio/ogg",
+    ".ogg": "audio/ogg",
+    ".opus": "audio/ogg",
+    ".wav": "audio/wav",
+    ".wave": "audio/wav",
+    ".webm": "audio/webm",
+    ".wma": "audio/x-ms-wma",
+}
+
+PCM_SUBTYPES = {"PCM_S8", "PCM_16", "PCM_24", "PCM_32", "FLOAT", "DOUBLE"}
+EXPORT_FORMATS = {
+    ".wav": {
+        "suffix": ".wav",
+        "format": "WAV",
+        "default_subtype": "PCM_24",
+        "label": "Download tuned WAV",
+        "file_name": "tuned.wav",
+        "mime": "audio/wav",
+    },
+    ".wave": {
+        "suffix": ".wav",
+        "format": "WAV",
+        "default_subtype": "PCM_24",
+        "label": "Download tuned WAV",
+        "file_name": "tuned.wav",
+        "mime": "audio/wav",
+    },
+    ".flac": {
+        "suffix": ".flac",
+        "format": "FLAC",
+        "default_subtype": "PCM_24",
+        "label": "Download tuned FLAC",
+        "file_name": "tuned.flac",
+        "mime": "audio/flac",
+    },
+    ".aif": {
+        "suffix": ".aiff",
+        "format": "AIFF",
+        "default_subtype": "PCM_24",
+        "label": "Download tuned AIFF",
+        "file_name": "tuned.aiff",
+        "mime": "audio/aiff",
+    },
+    ".aiff": {
+        "suffix": ".aiff",
+        "format": "AIFF",
+        "default_subtype": "PCM_24",
+        "label": "Download tuned AIFF",
+        "file_name": "tuned.aiff",
+        "mime": "audio/aiff",
+    },
+    ".mp3": {
+        "suffix": ".mp3",
+        "format": "MP3",
+        "subtype": "MPEG_LAYER_III",
+        "compression_level": 0.0,
+        "label": "Download tuned MP3",
+        "file_name": "tuned.mp3",
+        "mime": "audio/mpeg",
+    },
+}
+FALLBACK_EXPORT = EXPORT_FORMATS[".wav"]
 
 
 st.set_page_config(
@@ -365,6 +452,10 @@ def save_uploaded_file(uploaded_file):
         return temp_file.name
 
 
+def audio_mime_type(file_name):
+    return AUDIO_MIME_TYPES.get(Path(file_name).suffix.lower())
+
+
 def analyze_audio(file_path):
     y, sr = librosa.load(file_path, sr=None, mono=True)
     chroma = librosa.feature.chroma_cens(y=y, sr=sr)
@@ -411,19 +502,44 @@ def pitch_shift_audio(audio, sample_rate, semitone_shift):
     return np.vstack(shifted_channels)
 
 
+def source_subtype(source_path):
+    try:
+        return sf.info(source_path).subtype
+    except Exception:
+        return None
+
+
+def export_subtype(source_path, output_format, default_subtype):
+    subtype = source_subtype(source_path)
+    if subtype in PCM_SUBTYPES and subtype in sf.available_subtypes(output_format):
+        return subtype
+    return default_subtype
+
+
+def export_config_for_source(source_path):
+    return EXPORT_FORMATS.get(Path(source_path).suffix.lower(), FALLBACK_EXPORT)
+
+
 def export_audio(audio, sample_rate, source_path):
-    source_suffix = Path(source_path).suffix.lower()
-    output_suffix = ".mp3" if source_suffix == ".mp3" else ".wav"
-    write_kwargs = {}
+    export_config = export_config_for_source(source_path)
+    write_kwargs = {"format": export_config["format"]}
 
-    if output_suffix == ".mp3":
-        write_kwargs = {
-            "format": "MP3",
-            "subtype": "MPEG_LAYER_III",
-            "compression_level": 0.0,
-        }
+    if "subtype" in export_config:
+        write_kwargs["subtype"] = export_config["subtype"]
+    else:
+        write_kwargs["subtype"] = export_subtype(
+            source_path,
+            export_config["format"],
+            export_config["default_subtype"],
+        )
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=output_suffix) as fixed_file:
+    if "compression_level" in export_config:
+        write_kwargs["compression_level"] = export_config["compression_level"]
+
+    with tempfile.NamedTemporaryFile(
+        delete=False,
+        suffix=export_config["suffix"],
+    ) as fixed_file:
         sf.write(
             fixed_file.name,
             audio.T if audio.ndim > 1 else audio,
@@ -440,18 +556,7 @@ def shift_audio(file_path, semitone_shift):
 
 
 def export_download_details(file_path):
-    if Path(file_path).suffix.lower() == ".mp3":
-        return {
-            "label": "Download tuned MP3",
-            "file_name": "tuned.mp3",
-            "mime": "audio/mpeg",
-        }
-
-    return {
-        "label": "Download tuned WAV",
-        "file_name": "tuned.wav",
-        "mime": "audio/wav",
-    }
+    return export_config_for_source(file_path)
 
 
 def show_metric(label, value, accent=False):
@@ -490,6 +595,12 @@ def reset_processed_output():
     st.session_state.pop("last_shift", None)
 
 
+def show_audio_error(message, exc):
+    st.error(message)
+    with st.expander("Technical details"):
+        st.code(str(exc) or exc.__class__.__name__)
+
+
 def render_tuned_audio(total_shift, spinner_text):
     with st.spinner(spinner_text):
         try:
@@ -497,7 +608,7 @@ def render_tuned_audio(total_shift, spinner_text):
             st.session_state.fixed_file_path = fixed_file_path
             st.session_state.last_shift = total_shift
         except Exception as exc:
-            st.error(f"Could not tune this file: {exc}")
+            show_audio_error(TUNE_ERROR_MESSAGE, exc)
 
 
 def show_custom_shift_warning(total_shift):
@@ -526,7 +637,7 @@ st.markdown(
 )
 
 with st.container(border=True):
-    uploaded_file = st.file_uploader("Upload WAV or MP3", type=["wav", "mp3"])
+    uploaded_file = st.file_uploader("Upload audio file", help=UPLOAD_HELP)
 
 if uploaded_file:
     file_signature = (uploaded_file.name, uploaded_file.size)
@@ -549,7 +660,9 @@ with left_col:
     with st.container(border=True):
         st.markdown('<p class="section-title">Original Track</p>', unsafe_allow_html=True)
         st.write(st.session_state.uploaded_file_name)
-        st.audio(st.session_state.uploaded_audio)
+        uploaded_mime_type = audio_mime_type(st.session_state.uploaded_file_name)
+        if uploaded_mime_type:
+            st.audio(st.session_state.uploaded_audio, format=uploaded_mime_type)
 
         if st.button("Analyze pitch", type="primary", use_container_width=True):
             with st.spinner("Listening for key and tuning offset..."):
@@ -558,7 +671,7 @@ with left_col:
                     st.session_state.analysis = analysis
                     reset_processed_output()
                 except Exception as exc:
-                    st.error(f"Could not analyze this file: {exc}")
+                    show_audio_error(DECODE_ERROR_MESSAGE, exc)
 
 if analysis:
     with middle_col:
